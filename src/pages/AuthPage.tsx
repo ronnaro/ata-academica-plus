@@ -15,6 +15,7 @@ const AuthPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [activeTab, setActiveTab] = useState('login');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -22,13 +23,42 @@ const AuthPage: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signIn(email, password);
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      await signIn(email, password);
+    } catch (error) {
+      console.error('Erro no login:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signUp(email, password, fullName);
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      await signUp(email, password, fullName);
+      setActiveTab('login');
+      setEmail('');
+      setPassword('');
+    } catch (error) {
+      console.error('Erro no cadastro:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
@@ -58,6 +88,7 @@ const AuthPage: React.FC = () => {
                     value={email} 
                     onChange={e => setEmail(e.target.value)} 
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
@@ -68,10 +99,11 @@ const AuthPage: React.FC = () => {
                     value={password} 
                     onChange={e => setPassword(e.target.value)} 
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Entrando...' : 'Entrar'}
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? 'Entrando...' : 'Entrar'}
                 </Button>
               </form>
             </TabsContent>
@@ -87,6 +119,7 @@ const AuthPage: React.FC = () => {
                     value={fullName} 
                     onChange={e => setFullName(e.target.value)} 
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
@@ -98,6 +131,7 @@ const AuthPage: React.FC = () => {
                     value={email} 
                     onChange={e => setEmail(e.target.value)} 
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
@@ -108,10 +142,11 @@ const AuthPage: React.FC = () => {
                     value={password} 
                     onChange={e => setPassword(e.target.value)} 
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Criando conta...' : 'Criar Conta'}
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? 'Criando conta...' : 'Criar Conta'}
                 </Button>
               </form>
             </TabsContent>

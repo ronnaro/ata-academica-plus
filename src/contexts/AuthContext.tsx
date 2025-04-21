@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,19 +31,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (event === 'SIGNED_OUT') {
         setIsCoordinator(false);
-        navigate('/login');
       } else if (event === 'SIGNED_IN' && currentSession?.user) {
         await checkIfCoordinator(currentSession.user.id);
-        navigate('/dashboard');
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       
       if (currentSession?.user) {
-        checkIfCoordinator(currentSession.user.id);
+        await checkIfCoordinator(currentSession.user.id);
       }
       
       setIsLoading(false);
@@ -51,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
 
   const checkIfCoordinator = async (userId: string) => {
     try {
@@ -78,6 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.user) {
         await checkIfCoordinator(data.user.id);
         toast.success('Login realizado com sucesso');
+        navigate('/dashboard');
       }
     } catch (error: any) {
       toast.error(`Erro ao fazer login: ${error.message}`);
@@ -120,6 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       
       toast.success('Você saiu do sistema');
+      navigate('/login');
     } catch (error: any) {
       toast.error(`Erro ao sair: ${error.message}`);
       throw error;
