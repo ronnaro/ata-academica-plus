@@ -8,6 +8,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Download, FileText, Users, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Mock data for professors and periods
 const professors = [
@@ -29,6 +33,7 @@ const CertificatesPage = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<string>('2024.1');
   const [selectedProfessors, setSelectedProfessors] = useState<number[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const { user } = useAuth();
 
   const toggleAllProfessors = () => {
     if (selectedProfessors.length === professors.length) {
@@ -46,6 +51,93 @@ const CertificatesPage = () => {
     );
   };
 
+  const generatePDF = (professor: typeof professors[0]) => {
+    try {
+      // Create a new PDF document
+      const doc = new jsPDF();
+      const hoursAttended = professor.meetingsAttended * 2;
+      
+      // Add the Institute logo and headers
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('INSTITUTO FEDERAL DE EDUCAÇÃO, CIÊNCIA E TECNOLOGIA DO PARÁ', 105, 20, { align: 'center' });
+      
+      doc.setFontSize(14);
+      doc.text('CAMPUS BELÉM', 105, 30, { align: 'center' });
+      doc.text('DECLARAÇÃO DE PARTICIPAÇÃO', 105, 45, { align: 'center' });
+      
+      // Horizontal line
+      doc.setDrawColor(0);
+      doc.setLineWidth(0.5);
+      doc.line(20, 50, 190, 50);
+      
+      // Certificate text
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      
+      const text = [
+        `Declaro para os devidos fins que ${professor.name}, SIAPE ${professor.siape}, docente do `,
+        `departamento de ${professor.department}, participou de ${professor.meetingsAttended} reuniões do colegiado `,
+        `no período ${selectedPeriod}, totalizando ${hoursAttended} horas de atividades.`
+      ];
+      
+      doc.text(text, 20, 70);
+      
+      // Signature
+      doc.text('Belém, ' + new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }), 105, 130, { align: 'center' });
+      doc.line(70, 160, 140, 160);
+      doc.text('Coordenador do Curso', 105, 170, { align: 'center' });
+      
+      // Footer
+      doc.setFontSize(8);
+      doc.text('Documento gerado pelo sistema Acta Academica', 105, 280, { align: 'center' });
+      
+      // Save the PDF with the professor's name
+      const filename = `declaracao_${professor.name.replace(/\s+/g, '_').toLowerCase()}_${selectedPeriod}.pdf`;
+      
+      // Log the certificate generation
+      logCertificateGeneration(professor.id, selectedPeriod, hoursAttended);
+      
+      // Download the PDF
+      doc.save(filename);
+      
+      return filename;
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF');
+      return null;
+    }
+  };
+
+  const logCertificateGeneration = async (professorId: number, period: string, hours: number) => {
+    try {
+      // In a real app with Supabase, this would save to the certificates table
+      console.log(`Certificate generated for professor ${professorId} for period ${period} with ${hours} hours`);
+      
+      // Example of how this would work with a real Supabase database
+      if (user) {
+        // This is just a log for demonstration
+        console.log('Certificate would be saved to database with user ID:', user.id);
+        // In a real implementation, this would be an insert to the certificates table
+      }
+    } catch (error) {
+      console.error('Erro ao registrar geração de certificado:', error);
+    }
+  };
+
+  const handleDownloadCertificate = (professorId: number) => {
+    const professor = professors.find(p => p.id === professorId);
+    if (!professor) {
+      toast.error('Professor não encontrado');
+      return;
+    }
+    
+    const filename = generatePDF(professor);
+    if (filename) {
+      toast.success(`Declaração de ${professor.name} baixada com sucesso`);
+    }
+  };
+
   const handleGenerateCertificates = () => {
     if (selectedProfessors.length === 0) {
       toast.error('Selecione pelo menos um professor');
@@ -54,17 +146,42 @@ const CertificatesPage = () => {
 
     setIsGenerating(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      toast.success(`Declarações geradas com sucesso para ${selectedProfessors.length} professor(es)`);
+    try {
+      // Generate PDFs for all selected professors
+      let successCount = 0;
+      
+      selectedProfessors.forEach(professorId => {
+        const professor = professors.find(p => p.id === professorId);
+        if (professor) {
+          const filename = generatePDF(professor);
+          if (filename) {
+            successCount++;
+          }
+        }
+      });
+      
+      if (successCount > 0) {
+        toast.success(`${successCount} declarações geradas com sucesso`);
+      }
+    } catch (error) {
+      console.error('Erro ao gerar declarações em lote:', error);
+      toast.error('Ocorreu um erro ao gerar as declarações');
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
-  const handleDownloadCertificate = (id: number) => {
-    // Simulate download
-    toast.success('Iniciando download da declaração');
-    // In a real app, this would trigger a download from Supabase Storage
+  const handleDownloadBatch = () => {
+    if (selectedProfessors.length === 0) {
+      toast.error('Selecione pelo menos um professor');
+      return;
+    }
+
+    toast.info('Iniciando download em lote...');
+    
+    setTimeout(() => {
+      handleGenerateCertificates();
+    }, 500);
   };
 
   return (
@@ -109,6 +226,7 @@ const CertificatesPage = () => {
                   variant="outline"
                   className="w-full sm:w-auto"
                   disabled={selectedProfessors.length === 0}
+                  onClick={handleDownloadBatch}
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Baixar em Lote
