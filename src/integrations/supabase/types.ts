@@ -9,16 +9,285 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      certificates: {
+        Row: {
+          academic_period: string
+          end_date: string
+          file_path: string | null
+          generated_at: string
+          generated_by: string
+          id: string
+          professor_id: string
+          start_date: string
+          total_hours: number
+        }
+        Insert: {
+          academic_period: string
+          end_date: string
+          file_path?: string | null
+          generated_at?: string
+          generated_by: string
+          id?: string
+          professor_id: string
+          start_date: string
+          total_hours: number
+        }
+        Update: {
+          academic_period?: string
+          end_date?: string
+          file_path?: string | null
+          generated_at?: string
+          generated_by?: string
+          id?: string
+          professor_id?: string
+          start_date?: string
+          total_hours?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_professor_id_fkey"
+            columns: ["professor_id"]
+            isOneToOne: false
+            referencedRelation: "professors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_attachments: {
+        Row: {
+          file_path: string
+          filename: string
+          id: string
+          meeting_id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          file_path: string
+          filename: string
+          id?: string
+          meeting_id: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          file_path?: string
+          filename?: string
+          id?: string
+          meeting_id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_attachments_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_minutes: {
+        Row: {
+          content: string
+          file_path: string | null
+          generated_at: string
+          generated_by: string
+          id: string
+          meeting_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          file_path?: string | null
+          generated_at?: string
+          generated_by: string
+          id?: string
+          meeting_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          file_path?: string | null
+          generated_at?: string
+          generated_by?: string
+          id?: string
+          meeting_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_minutes_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: true
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_participants: {
+        Row: {
+          attendance_status: boolean
+          hours_computed: number
+          id: string
+          meeting_id: string
+          professor_id: string
+        }
+        Insert: {
+          attendance_status?: boolean
+          hours_computed?: number
+          id?: string
+          meeting_id: string
+          professor_id: string
+        }
+        Update: {
+          attendance_status?: boolean
+          hours_computed?: number
+          id?: string
+          meeting_id?: string
+          professor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_participants_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_participants_professor_id_fkey"
+            columns: ["professor_id"]
+            isOneToOne: false
+            referencedRelation: "professors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          academic_period: string | null
+          agenda: string | null
+          created_at: string
+          created_by: string
+          deliberations: string | null
+          id: string
+          location: string | null
+          meeting_date: string
+          meeting_type: Database["public"]["Enums"]["meeting_type"]
+          status: Database["public"]["Enums"]["meeting_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          academic_period?: string | null
+          agenda?: string | null
+          created_at?: string
+          created_by: string
+          deliberations?: string | null
+          id?: string
+          location?: string | null
+          meeting_date: string
+          meeting_type: Database["public"]["Enums"]["meeting_type"]
+          status?: Database["public"]["Enums"]["meeting_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          academic_period?: string | null
+          agenda?: string | null
+          created_at?: string
+          created_by?: string
+          deliberations?: string | null
+          id?: string
+          location?: string | null
+          meeting_date?: string
+          meeting_type?: Database["public"]["Enums"]["meeting_type"]
+          status?: Database["public"]["Enums"]["meeting_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      professors: {
+        Row: {
+          created_at: string
+          department: string | null
+          full_name: string
+          id: string
+          institution_email: string
+          siape_code: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          full_name: string
+          id?: string
+          institution_email: string
+          siape_code?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          full_name?: string
+          id?: string
+          institution_email?: string
+          siape_code?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          institution_email: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id: string
+          institution_email: string
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          institution_email?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_coordinator: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      meeting_status: "agendada" | "realizada" | "cancelada"
+      meeting_type:
+        | "ordinaria"
+        | "extraordinaria"
+        | "colegiado"
+        | "comissao"
+        | "outros"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +402,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      meeting_status: ["agendada", "realizada", "cancelada"],
+      meeting_type: [
+        "ordinaria",
+        "extraordinaria",
+        "colegiado",
+        "comissao",
+        "outros",
+      ],
+    },
   },
 } as const
