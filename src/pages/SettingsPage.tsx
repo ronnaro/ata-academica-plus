@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,21 +9,35 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
 import { Upload } from 'lucide-react';
+import { 
+  useSettings, 
+  InstitutionSettings, 
+  CertificateSettings,
+  MeetingSettings
+} from '@/hooks/useSettings';
 
 const SettingsPage = () => {
+  // Get settings management functions
+  const { 
+    isSubmitting, 
+    saveInstitutionSettings, 
+    saveCertificateSettings, 
+    saveMeetingSettings,
+    loadSettings 
+  } = useSettings();
+
   // Institution settings
-  const [institution, setInstitution] = useState({
+  const [institution, setInstitution] = useState<InstitutionSettings>({
     name: 'Instituto Federal do Pará',
     abbreviation: 'IFPA',
     campus: 'Campus Belém',
     department: 'Departamento de Informática',
-    logo: null as File | null,
+    logo: null,
   });
 
   // Certificate settings
-  const [certificate, setCertificate] = useState({
+  const [certificate, setCertificate] = useState<CertificateSettings>({
     headerText: 'INSTITUTO FEDERAL DE EDUCAÇÃO, CIÊNCIA E TECNOLOGIA DO PARÁ',
     footerText: 'Documento gerado pelo sistema Acta Academica',
     signature: 'Coordenador(a) do Curso',
@@ -32,12 +46,45 @@ const SettingsPage = () => {
   });
 
   // Meeting settings
-  const [meeting, setMeeting] = useState({
+  const [meeting, setMeeting] = useState<MeetingSettings>({
     defaultType: 'ordinaria',
     defaultDuration: 120, // minutes
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  useEffect(() => {
+    // Load saved settings
+    const fetchSettings = async () => {
+      // Load institution settings
+      const institutionData = await loadSettings('institution');
+      if (institutionData) {
+        setInstitution(prevState => ({
+          ...prevState,
+          ...institutionData,
+          logo: null // Clear logo file object
+        }));
+      }
+
+      // Load certificate settings
+      const certificateData = await loadSettings('certificate');
+      if (certificateData) {
+        setCertificate(prevState => ({
+          ...prevState,
+          ...certificateData
+        }));
+      }
+
+      // Load meeting settings
+      const meetingData = await loadSettings('meeting');
+      if (meetingData) {
+        setMeeting(prevState => ({
+          ...prevState,
+          ...meetingData
+        }));
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -82,14 +129,14 @@ const SettingsPage = () => {
     }
   };
 
-  const handleSaveSettings = (tab: string) => {
-    setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      toast.success('Configurações salvas com sucesso!');
-      setIsSubmitting(false);
-    }, 1000);
+  const handleSaveSettings = async (tab: string) => {
+    if (tab === 'institution') {
+      await saveInstitutionSettings(institution);
+    } else if (tab === 'certificates') {
+      await saveCertificateSettings(certificate);
+    } else if (tab === 'meetings') {
+      await saveMeetingSettings(meeting);
+    }
   };
 
   return (

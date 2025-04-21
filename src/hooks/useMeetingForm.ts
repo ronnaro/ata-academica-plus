@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { MeetingFormData } from '@/types/meeting';
+import { MeetingFormData, MeetingType } from '@/types/meeting';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -12,7 +12,7 @@ export const useMeetingForm = (onComplete: () => void) => {
 
   const handleSubmit = async (formData: MeetingFormData) => {
     if (!user) {
-      toast.error('You must be logged in to create a meeting');
+      toast.error('Você deve estar logado para criar uma reunião');
       return;
     }
 
@@ -20,7 +20,7 @@ export const useMeetingForm = (onComplete: () => void) => {
 
     try {
       // Make sure the meeting type is a valid enum value
-      const meetingType = formData.meetingType as 'ordinaria' | 'extraordinaria' | 'colegiado' | 'comissao' | 'outros';
+      const meetingType = formData.meetingType as MeetingType;
       
       // Insert meeting data
       const { data: meetingData, error: meetingError } = await supabase
@@ -83,10 +83,10 @@ export const useMeetingForm = (onComplete: () => void) => {
         if (participantError) throw participantError;
       }
 
-      toast.success('Meeting scheduled successfully!');
+      toast.success('Reunião agendada com sucesso!');
       onComplete();
     } catch (error: any) {
-      toast.error(`Error scheduling meeting: ${error.message}`);
+      toast.error(`Erro ao agendar reunião: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }

@@ -21,7 +21,7 @@ export const useProfessors = () => {
 
         // Transform the data to match the Professor type
         const transformedData = data ? data.map(prof => ({
-          id: prof.id,
+          id: Number(prof.id),
           name: prof.full_name
         })) : [];
 

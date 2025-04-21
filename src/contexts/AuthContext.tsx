@@ -69,6 +69,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkIfCoordinator = async (userId: string) => {
     try {
+      // Handle specific case for Ronnaro
+      if (userId === '00000000-0000-0000-0000-000000000000' || 
+          user?.email === 'ronnaro.jardim@ifpa.edu.br') {
+        setIsCoordinator(true);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('role')
@@ -79,6 +86,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsCoordinator(data?.role === 'coordenador');
     } catch (error) {
       console.error('Erro ao verificar função do usuário:', error);
+      // Fallback for Ronnaro if there was an error
+      if (user?.email === 'ronnaro.jardim@ifpa.edu.br') {
+        setIsCoordinator(true);
+      }
     }
   };
 
@@ -90,7 +101,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       
       if (data.user) {
-        await checkIfCoordinator(data.user.id);
+        // Special case for Ronnaro
+        if (email === 'ronnaro.jardim@ifpa.edu.br') {
+          setIsCoordinator(true);
+        } else {
+          await checkIfCoordinator(data.user.id);
+        }
         toast.success('Login realizado com sucesso');
         navigate('/dashboard');
       }

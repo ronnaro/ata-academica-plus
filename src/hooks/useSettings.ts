@@ -1,0 +1,180 @@
+
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+
+export type InstitutionSettings = {
+  name: string;
+  abbreviation: string;
+  campus: string;
+  department: string;
+  logo: File | null;
+};
+
+export type CertificateSettings = {
+  headerText: string;
+  footerText: string;
+  signature: string;
+  workloadPerMeeting: number;
+  showInstitutionLogo: boolean;
+};
+
+export type MeetingSettings = {
+  defaultType: string;
+  defaultDuration: number;
+};
+
+export const useSettings = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
+
+  const saveInstitutionSettings = async (settings: InstitutionSettings) => {
+    if (!user) {
+      toast.error('Você precisa estar logado para salvar configurações');
+      return false;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Save settings to Supabase
+      const { error } = await supabase
+        .from('settings')
+        .upsert({
+          user_id: user.id,
+          settings_type: 'institution',
+          settings_data: {
+            name: settings.name,
+            abbreviation: settings.abbreviation,
+            campus: settings.campus,
+            department: settings.department
+          }
+        });
+
+      if (error) throw error;
+
+      // Handle logo upload if present
+      if (settings.logo) {
+        const fileExt = settings.logo.name.split('.').pop();
+        const fileName = `institution_logo_${Date.now()}.${fileExt}`;
+        const filePath = `settings/${user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase
+          .storage
+          .from('settings_files')
+          .upload(filePath, settings.logo);
+
+        if (uploadError) throw uploadError;
+
+        // Update logo path in settings
+        const { error: updateError } = await supabase
+          .from('settings')
+          .update({
+            settings_data: {
+              ...settings,
+              logo_path: filePath
+            }
+          })
+          .eq('user_id', user.id)
+          .eq('settings_type', 'institution');
+
+        if (updateError) throw updateError;
+      }
+
+      toast.success('Configurações da instituição salvas com sucesso!');
+      return true;
+    } catch (error: any) {
+      toast.error(`Erro ao salvar configurações: ${error.message}`);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const saveCertificateSettings = async (settings: CertificateSettings) => {
+    if (!user) {
+      toast.error('Você precisa estar logado para salvar configurações');
+      return false;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('settings')
+        .upsert({
+          user_id: user.id,
+          settings_type: 'certificate',
+          settings_data: settings
+        });
+
+      if (error) throw error;
+
+      toast.success('Configurações de declarações salvas com sucesso!');
+      return true;
+    } catch (error: any) {
+      toast.error(`Erro ao salvar configurações: ${error.message}`);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const saveMeetingSettings = async (settings: MeetingSettings) => {
+    if (!user) {
+      toast.error('Você precisa estar logado para salvar configurações');
+      return false;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('settings')
+        .upsert({
+          user_id: user.id,
+          settings_type: 'meeting',
+          settings_data: settings
+        });
+
+      if (error) throw error;
+
+      toast.success('Configurações de reuniões salvas com sucesso!');
+      return true;
+    } catch (error: any) {
+      toast.error(`Erro ao salvar configurações: ${error.message}`);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const loadSettings = async (settingsType: string) => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('settings_data')
+        .eq('user_id', user.id)
+        .eq('settings_type', settingsType)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      return data?.settings_data || null;
+    } catch (error: any) {
+      console.error(`Erro ao carregar configurações: ${error.message}`);
+      return null;
+    }
+  };
+
+  return {
+    isSubmitting,
+    saveInstitutionSettings,
+    saveCertificateSettings,
+    saveMeetingSettings,
+    loadSettings
+  };
+};
