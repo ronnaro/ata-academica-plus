@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -54,7 +55,14 @@ const SettingsPage = () => {
     // Load saved settings
     const fetchSettings = async () => {
       // Load institution settings
-      const institutionData = await loadSettings('institution');
+      const institutionData = await loadSettings<{
+        name?: string;
+        abbreviation?: string;
+        campus?: string;
+        department?: string;
+        logo_path?: string;
+      }>('institution');
+      
       if (institutionData) {
         setInstitution({
           name: institutionData.name || '',
@@ -67,7 +75,14 @@ const SettingsPage = () => {
       }
 
       // Load certificate settings
-      const certificateData = await loadSettings('certificate');
+      const certificateData = await loadSettings<{
+        headerText?: string;
+        footerText?: string;
+        signature?: string;
+        workloadPerMeeting?: number;
+        showInstitutionLogo?: boolean;
+      }>('certificate');
+      
       if (certificateData) {
         setCertificate({
           headerText: certificateData.headerText || '',
@@ -80,7 +95,11 @@ const SettingsPage = () => {
       }
 
       // Load meeting settings
-      const meetingData = await loadSettings('meeting');
+      const meetingData = await loadSettings<{
+        defaultType?: string;
+        defaultDuration?: number;
+      }>('meeting');
+      
       if (meetingData) {
         setMeeting({
           defaultType: meetingData.defaultType || 'ordinaria',

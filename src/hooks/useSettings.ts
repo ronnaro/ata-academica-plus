@@ -135,7 +135,7 @@ export const useSettings = () => {
     }
   };
 
-  const loadSettings = async (settingsType: string) => {
+  const loadSettings = async <T,>(settingsType: string): Promise<T | null> => {
     if (!user) return null;
 
     try {
@@ -148,7 +148,7 @@ export const useSettings = () => {
 
       if (error) throw error;
 
-      return data?.settings_data || null;
+      return data?.settings_data as T || null;
     } catch (error: any) {
       console.error(`Erro ao carregar configurações: ${error.message}`);
       return null;
