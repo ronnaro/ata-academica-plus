@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,16 +9,8 @@ import { DateTimeSection } from './meetings/DateTimeSection';
 import { ParticipantsSection } from './meetings/ParticipantsSection';
 import { AttachmentsSection } from './meetings/AttachmentsSection';
 import { useMeetingForm } from '@/hooks/useMeetingForm';
-import { Professor, NewMeetingFormProps } from '@/types/meeting';
-
-// Sample professors data
-const professors: Professor[] = [
-  { id: 1, name: 'Ana Silva' },
-  { id: 2, name: 'Carlos Oliveira' },
-  { id: 3, name: 'Mariana Santos' },
-  { id: 4, name: 'Ricardo Lima' },
-  { id: 5, name: 'Juliana Costa' },
-];
+import { NewMeetingFormProps } from '@/types/meeting';
+import { useProfessors } from '@/hooks/useProfessors';
 
 const meetingTypes = [
   { value: 'ordinaria', label: 'Ordinária' },
@@ -35,12 +26,13 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
   const [startTime, setStartTime] = useState('14:00');
   const [endTime, setEndTime] = useState('16:00');
   const [location, setLocation] = useState('');
-  const [meetingType, setMeetingType] = useState('');
+  const [meetingType, setMeetingType] = useState<'ordinaria' | 'extraordinaria' | 'colegiado' | 'comissao' | 'outros'>('ordinaria');
   const [selectedProfessors, setSelectedProfessors] = useState<number[]>([]);
   const [agenda, setAgenda] = useState('');
   const [semesterId, setSemesterId] = useState('');
   const [attachments, setAttachments] = useState<FileList | null>(null);
   const [semesters, setSemesters] = useState<{ id: string; name: string; }[]>([]);
+  const { professors, isLoading: professorsLoading } = useProfessors();
 
   const { handleSubmit, isSubmitting } = useMeetingForm(onComplete);
 
@@ -85,6 +77,10 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
         : [...prev, id]
     );
   };
+
+  if (professorsLoading) {
+    return <div className="py-4">Loading professors...</div>;
+  }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 py-4">
