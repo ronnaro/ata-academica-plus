@@ -19,6 +19,9 @@ export const useMeetingForm = (onComplete: () => void) => {
     setIsSubmitting(true);
 
     try {
+      // Make sure the meeting type is a valid enum value
+      const meetingType = formData.meetingType as 'ordinaria' | 'extraordinaria' | 'colegiado' | 'comissao' | 'outros';
+      
       // Insert meeting data
       const { data: meetingData, error: meetingError } = await supabase
         .from('meetings')
@@ -28,7 +31,7 @@ export const useMeetingForm = (onComplete: () => void) => {
           start_time: formData.startTime,
           end_time: formData.endTime,
           location: formData.location,
-          meeting_type: formData.meetingType,
+          meeting_type: meetingType,
           semester_id: formData.semesterId,
           agenda: formData.agenda,
           created_by: user.id

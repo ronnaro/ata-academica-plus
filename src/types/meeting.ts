@@ -4,13 +4,15 @@ export interface Professor {
   name: string;
 }
 
+export type MeetingType = 'ordinaria' | 'extraordinaria' | 'colegiado' | 'comissao' | 'outros';
+
 export interface MeetingFormData {
   title: string;
   date: Date | undefined;
   startTime: string;
   endTime: string;
   location: string;
-  meetingType: string;
+  meetingType: MeetingType;
   selectedProfessors: number[];
   agenda: string;
   semesterId: string;

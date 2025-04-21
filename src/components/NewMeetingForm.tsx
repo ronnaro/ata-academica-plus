@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,8 @@ import { AttachmentsSection } from './meetings/AttachmentsSection';
 import { useMeetingForm } from '@/hooks/useMeetingForm';
 import { NewMeetingFormProps } from '@/types/meeting';
 import { useProfessors } from '@/hooks/useProfessors';
+
+type MeetingType = 'ordinaria' | 'extraordinaria' | 'colegiado' | 'comissao' | 'outros';
 
 const meetingTypes = [
   { value: 'ordinaria', label: 'Ordinária' },
@@ -26,7 +29,7 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
   const [startTime, setStartTime] = useState('14:00');
   const [endTime, setEndTime] = useState('16:00');
   const [location, setLocation] = useState('');
-  const [meetingType, setMeetingType] = useState<'ordinaria' | 'extraordinaria' | 'colegiado' | 'comissao' | 'outros'>('ordinaria');
+  const [meetingType, setMeetingType] = useState<MeetingType>('ordinaria');
   const [selectedProfessors, setSelectedProfessors] = useState<number[]>([]);
   const [agenda, setAgenda] = useState('');
   const [semesterId, setSemesterId] = useState('');
@@ -141,13 +144,13 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
         <label htmlFor="meeting-type" className="text-sm font-medium">
           Tipo de Reunião *
         </label>
-        <Select value={meetingType} onValueChange={setMeetingType}>
+        <Select value={meetingType} onValueChange={(value: MeetingType) => setMeetingType(value)}>
           <SelectTrigger>
             <SelectValue placeholder="Selecione o tipo de reunião" />
           </SelectTrigger>
           <SelectContent>
             {meetingTypes.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
+              <SelectItem key={type.value} value={type.value as MeetingType}>
                 {type.label}
               </SelectItem>
             ))}

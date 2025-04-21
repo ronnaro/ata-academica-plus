@@ -13,13 +13,19 @@ export const useProfessors = () => {
       try {
         const { data, error } = await supabase
           .from('professors')
-          .select('id, full_name as name');
+          .select('id, full_name');
 
         if (error) {
           throw error;
         }
 
-        setProfessors(data || []);
+        // Transform the data to match the Professor type
+        const transformedData = data ? data.map(prof => ({
+          id: prof.id,
+          name: prof.full_name
+        })) : [];
+
+        setProfessors(transformedData);
       } catch (error: any) {
         toast.error(`Error fetching professors: ${error.message}`);
         setProfessors([]);
