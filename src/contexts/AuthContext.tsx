@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,17 +24,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up the auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
 
       if (event === 'SIGNED_OUT') {
         setIsCoordinator(false);
+        navigate('/login');
+      } else if (event === 'SIGNED_IN' && currentSession?.user) {
+        await checkIfCoordinator(currentSession.user.id);
+        navigate('/dashboard');
       }
     });
 
-    // Get the initial session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
@@ -50,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const checkIfCoordinator = async (userId: string) => {
     try {
@@ -77,10 +78,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.user) {
         await checkIfCoordinator(data.user.id);
         toast.success('Login realizado com sucesso');
-        navigate('/dashboard');
       }
     } catch (error: any) {
       toast.error(`Erro ao fazer login: ${error.message}`);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -105,6 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Cadastro realizado com sucesso. Verifique seu email para confirmar.');
     } catch (error: any) {
       toast.error(`Erro ao fazer cadastro: ${error.message}`);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -117,10 +119,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
-      navigate('/login');
       toast.success('Você saiu do sistema');
     } catch (error: any) {
       toast.error(`Erro ao sair: ${error.message}`);
+      throw error;
     } finally {
       setIsLoading(false);
     }

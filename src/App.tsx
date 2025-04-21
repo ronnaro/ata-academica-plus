@@ -17,7 +17,14 @@ import CertificatesPage from "./pages/CertificatesPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -36,11 +43,15 @@ const App = () => (
                 </RequireAuth>
               } />
               <Route path="/professors" element={
-                <RequireAuth>
+                <RequireAuth requireCoordinator={true}>
                   <ProfessorsPage />
                 </RequireAuth>
               } />
-              <Route path="/meetings/:id" element={<MeetingDetailPage />} />
+              <Route path="/meetings/:id" element={
+                <RequireAuth>
+                  <MeetingDetailPage />
+                </RequireAuth>
+              } />
               <Route path="/certificates" element={
                 <RequireAuth>
                   <CertificatesPage />
