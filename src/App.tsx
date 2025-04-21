@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +8,13 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import RequireAuth from "@/components/RequireAuth";
 import SemesterPage from "./pages/SemesterPage";
+import AuthPage from "./pages/AuthPage";
+import Dashboard from "./pages/Dashboard";
+import ProfessorsPage from "./pages/ProfessorsPage";
+import MeetingDetailPage from "./pages/MeetingDetailPage";
+import CertificatesPage from "./pages/CertificatesPage";
+import SettingsPage from "./pages/SettingsPage";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {

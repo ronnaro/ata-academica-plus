@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,22 @@ import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon, Clock, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Define the Professor type
+interface Professor {
+  id: number;
+  name: string;
+}
+
+// Sample professors data
+const professors: Professor[] = [
+  { id: 1, name: 'Ana Silva' },
+  { id: 2, name: 'Carlos Oliveira' },
+  { id: 3, name: 'Mariana Santos' },
+  { id: 4, name: 'Ricardo Lima' },
+  { id: 5, name: 'Juliana Costa' },
+];
 
 interface NewMeetingFormProps {
   onComplete: () => void;
@@ -34,6 +51,7 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [attachments, setAttachments] = useState<FileList | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchSemesters = async () => {
@@ -80,6 +98,12 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
     }
 
     try {
+      // Ensure meetingType is one of the allowed types
+      const validType = meetingTypes.find(type => type.value === meetingType);
+      if (!validType) {
+        throw new Error('Tipo de reunião inválido');
+      }
+
       const { data: meetingData, error: meetingError } = await supabase
         .from('meetings')
         .insert({
@@ -88,9 +112,10 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
           start_time: startTime,
           end_time: endTime,
           location,
-          meeting_type: meetingType,
+          meeting_type: validType.value as 'ordinaria' | 'extraordinaria' | 'colegiado' | 'comissao' | 'outros',
           semester_id: semesterId,
           agenda,
+          created_by: user?.id || ''
         })
         .select()
         .single();
@@ -116,22 +141,26 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
               meeting_id: meetingData.id,
               file_path: filePath,
               filename: file.name,
+              uploaded_by: user?.id || ''
             });
 
           if (attachmentError) throw attachmentError;
         }
       }
 
-      const participantPromises = selectedProfessors.map(professorId =>
-        supabase
+      // Add participants to the meeting
+      for (const professorId of selectedProfessors) {
+        const { error: participantError } = await supabase
           .from('meeting_participants')
           .insert({
             meeting_id: meetingData.id,
-            professor_id: professorId,
-          })
-      );
+            professor_id: professorId.toString(),
+            attendance_status: false,
+            hours_computed: 2
+          });
 
-      await Promise.all(participantPromises);
+        if (participantError) throw participantError;
+      }
 
       toast.success('Reunião agendada com sucesso!');
       onComplete();
@@ -310,7 +339,7 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
           />
           <label htmlFor="attachments" className="cursor-pointer">
             <div className="text-center">
-              <Upload className="mx-auto h-8 w-4 text-gray-400" />
+              <Upload className="mx-auto h-8 w-8 text-gray-400" />
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Arraste arquivos aqui ou clique para selecionar
               </p>
