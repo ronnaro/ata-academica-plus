@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -12,9 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload } from 'lucide-react';
 import { 
   useSettings, 
-  InstitutionSettings, 
-  CertificateSettings,
-  MeetingSettings
+  type InstitutionSettings, 
+  type CertificateSettings,
+  type MeetingSettings
 } from '@/hooks/useSettings';
 
 const SettingsPage = () => {
@@ -57,29 +56,36 @@ const SettingsPage = () => {
       // Load institution settings
       const institutionData = await loadSettings('institution');
       if (institutionData) {
-        setInstitution(prevState => ({
-          ...prevState,
-          ...institutionData,
-          logo: null // Clear logo file object
-        }));
+        setInstitution({
+          name: institutionData.name || '',
+          abbreviation: institutionData.abbreviation || '',
+          campus: institutionData.campus || '',
+          department: institutionData.department || '',
+          logo: null, // Clear logo file object
+          logo_path: institutionData.logo_path
+        });
       }
 
       // Load certificate settings
       const certificateData = await loadSettings('certificate');
       if (certificateData) {
-        setCertificate(prevState => ({
-          ...prevState,
-          ...certificateData
-        }));
+        setCertificate({
+          headerText: certificateData.headerText || '',
+          footerText: certificateData.footerText || '',
+          signature: certificateData.signature || '',
+          workloadPerMeeting: certificateData.workloadPerMeeting || 2,
+          showInstitutionLogo: certificateData.showInstitutionLogo !== undefined ? 
+            certificateData.showInstitutionLogo : true
+        });
       }
 
       // Load meeting settings
       const meetingData = await loadSettings('meeting');
       if (meetingData) {
-        setMeeting(prevState => ({
-          ...prevState,
-          ...meetingData
-        }));
+        setMeeting({
+          defaultType: meetingData.defaultType || 'ordinaria',
+          defaultDuration: meetingData.defaultDuration || 120
+        });
       }
     };
 

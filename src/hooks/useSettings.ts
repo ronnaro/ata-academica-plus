@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { InstitutionSettings, CertificateSettings, MeetingSettings } from '@/types/settings';
+import type { InstitutionSettings, CertificateSettings, MeetingSettings } from '@/types/settings';
 
-export { InstitutionSettings, CertificateSettings, MeetingSettings };
+// Re-export as type to comply with isolatedModules
+export type { InstitutionSettings, CertificateSettings, MeetingSettings };
 
 export const useSettings = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,7 +55,10 @@ export const useSettings = () => {
           .from('settings')
           .update({
             settings_data: {
-              ...settings,
+              name: settings.name,
+              abbreviation: settings.abbreviation,
+              campus: settings.campus,
+              department: settings.department,
               logo_path: filePath
             }
           })
