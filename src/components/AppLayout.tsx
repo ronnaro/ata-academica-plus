@@ -1,34 +1,24 @@
 
 import React from 'react';
 import Sidebar from './Sidebar';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AppLayoutProps {
   children: React.ReactNode;
-  userName?: string;
-  userRole?: string;
 }
 
-const AppLayout: React.FC<AppLayoutProps> = ({ 
-  children,
-  userName = 'Usuário',
-  userRole = 'Coordenador'
-}) => {
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    // In a real app, this would call the Supabase logout function
-    toast.success('Logout realizado com sucesso');
-    navigate('/login');
-  };
+const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+  const { user, isCoordinator, signOut } = useAuth();
+  
+  const userName = user?.user_metadata?.full_name || 'Usuário';
+  const userRole = isCoordinator ? 'Coordenador' : 'Docente';
 
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
       <Sidebar 
         userName={userName} 
         userRole={userRole} 
-        onLogout={handleLogout} 
+        onLogout={signOut} 
       />
       <main className="flex-1 md:ml-64 min-h-screen">
         <div className="page-container">

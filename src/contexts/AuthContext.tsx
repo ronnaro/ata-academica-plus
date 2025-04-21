@@ -25,27 +25,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+    // First, set up the auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      console.log('Auth state changed:', event, currentSession?.user?.email);
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
 
       if (event === 'SIGNED_OUT') {
         setIsCoordinator(false);
       } else if (event === 'SIGNED_IN' && currentSession?.user) {
-        await checkIfCoordinator(currentSession.user.id);
+        // Use setTimeout to prevent potential auth deadlocks
+        setTimeout(() => {
+          checkIfCoordinator(currentSession.user.id);
+        }, 0);
       }
     });
 
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      
-      if (currentSession?.user) {
-        await checkIfCoordinator(currentSession.user.id);
+    // Then check for an existing session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log('Initial session check:', currentSession?.user?.email);
+        
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        if (currentSession?.user) {
+          await checkIfCoordinator(currentSession.user.id);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     return () => {
       subscription.unsubscribe();
@@ -58,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('profiles')
         .select('role')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setIsCoordinator(data?.role === 'coordenador');
