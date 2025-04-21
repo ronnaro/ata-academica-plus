@@ -3,27 +3,9 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { InstitutionSettings, CertificateSettings, MeetingSettings } from '@/types/settings';
 
-export type InstitutionSettings = {
-  name: string;
-  abbreviation: string;
-  campus: string;
-  department: string;
-  logo: File | null;
-};
-
-export type CertificateSettings = {
-  headerText: string;
-  footerText: string;
-  signature: string;
-  workloadPerMeeting: number;
-  showInstitutionLogo: boolean;
-};
-
-export type MeetingSettings = {
-  defaultType: string;
-  defaultDuration: number;
-};
+export { InstitutionSettings, CertificateSettings, MeetingSettings };
 
 export const useSettings = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,7 +20,6 @@ export const useSettings = () => {
     setIsSubmitting(true);
 
     try {
-      // Save settings to Supabase
       const { error } = await supabase
         .from('settings')
         .upsert({
@@ -48,7 +29,8 @@ export const useSettings = () => {
             name: settings.name,
             abbreviation: settings.abbreviation,
             campus: settings.campus,
-            department: settings.department
+            department: settings.department,
+            logo_path: null // Will be updated if logo is uploaded
           }
         });
 
@@ -58,7 +40,7 @@ export const useSettings = () => {
       if (settings.logo) {
         const fileExt = settings.logo.name.split('.').pop();
         const fileName = `institution_logo_${Date.now()}.${fileExt}`;
-        const filePath = `settings/${user.id}/${fileName}`;
+        const filePath = `${user.id}/${fileName}`;
 
         const { error: uploadError } = await supabase
           .storage
@@ -76,8 +58,7 @@ export const useSettings = () => {
               logo_path: filePath
             }
           })
-          .eq('user_id', user.id)
-          .eq('settings_type', 'institution');
+          .match({ user_id: user.id, settings_type: 'institution' });
 
         if (updateError) throw updateError;
       }
