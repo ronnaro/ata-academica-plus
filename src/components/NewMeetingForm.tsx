@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,29 +10,48 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon, Clock, Upload } from 'lucide-react';
 import { toast } from 'sonner';
-
-// Mock data for professors
-const professors = [
-  { id: 1, name: 'Prof. Ana Silva' },
-  { id: 2, name: 'Prof. Carlos Oliveira' },
-  { id: 3, name: 'Prof. Mariana Santos' },
-  { id: 4, name: 'Prof. Ricardo Lima' },
-  { id: 5, name: 'Prof. Juliana Costa' },
-];
+import { supabase } from '@/integrations/supabase/client';
 
 interface NewMeetingFormProps {
   onComplete: () => void;
 }
 
+interface Semester {
+  id: string;
+  name: string;
+}
+
 const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
   const [title, setTitle] = useState('');
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [time, setTime] = useState('14:00');
+  const [startTime, setStartTime] = useState('14:00');
+  const [endTime, setEndTime] = useState('16:00');
   const [location, setLocation] = useState('');
   const [meetingType, setMeetingType] = useState('');
   const [selectedProfessors, setSelectedProfessors] = useState<number[]>([]);
   const [agenda, setAgenda] = useState('');
+  const [semesterId, setSemesterId] = useState('');
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [attachments, setAttachments] = useState<FileList | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchSemesters = async () => {
+      const { data, error } = await supabase
+        .from('academic_semesters')
+        .select('id, name')
+        .order('start_date', { ascending: false });
+
+      if (error) {
+        toast.error(`Erro ao carregar semestres: ${error.message}`);
+        return;
+      }
+
+      setSemesters(data || []);
+    };
+
+    fetchSemesters();
+  }, []);
 
   const meetingTypes = [
     { value: 'ordinaria', label: 'Ordinária' },
@@ -55,35 +73,71 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Validate form
-    if (!title || !date || !location || !meetingType || selectedProfessors.length === 0) {
+    if (!title || !date || !location || !meetingType || !semesterId || selectedProfessors.length === 0) {
       toast.error('Por favor, preencha todos os campos obrigatórios.');
       setIsSubmitting(false);
       return;
     }
 
     try {
-      // This would call Supabase to save the meeting in a real app
-      // const { data, error } = await supabase.from('meetings').insert({
-      //   title,
-      //   date: date ? format(date, 'yyyy-MM-dd') : '',
-      //   time,
-      //   location,
-      //   type: meetingType,
-      //   participants: selectedProfessors,
-      //   agenda,
-      // });
-      
-      // if (error) throw error;
+      const { data: meetingData, error: meetingError } = await supabase
+        .from('meetings')
+        .insert({
+          title,
+          meeting_date: date ? format(date, 'yyyy-MM-dd') : '',
+          start_time: startTime,
+          end_time: endTime,
+          location,
+          meeting_type: meetingType,
+          semester_id: semesterId,
+          agenda,
+        })
+        .select()
+        .single();
 
-      // Simulate API call
-      setTimeout(() => {
-        toast.success('Reunião agendada com sucesso!');
-        setIsSubmitting(false);
-        onComplete();
-      }, 1000);
-    } catch (error) {
-      toast.error('Erro ao agendar reunião. Tente novamente.');
+      if (meetingError) throw meetingError;
+
+      if (attachments && attachments.length > 0) {
+        for (const file of Array.from(attachments)) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+          const filePath = `meeting_files/${meetingData.id}/${fileName}`;
+
+          const { error: uploadError } = await supabase
+            .storage
+            .from('meeting_files')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          const { error: attachmentError } = await supabase
+            .from('meeting_attachments')
+            .insert({
+              meeting_id: meetingData.id,
+              file_path: filePath,
+              filename: file.name,
+            });
+
+          if (attachmentError) throw attachmentError;
+        }
+      }
+
+      const participantPromises = selectedProfessors.map(professorId =>
+        supabase
+          .from('meeting_participants')
+          .insert({
+            meeting_id: meetingData.id,
+            professor_id: professorId,
+          })
+      );
+
+      await Promise.all(participantPromises);
+
+      toast.success('Reunião agendada com sucesso!');
+      onComplete();
+    } catch (error: any) {
+      toast.error(`Erro ao agendar reunião: ${error.message}`);
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -134,18 +188,26 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="time" className="text-sm font-medium">
-            Horário *
-          </label>
-          <div className="flex">
-            <Clock className="mr-2 h-4 w-4 mt-3" />
-            <Input
-              id="time"
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              required
-            />
+          <label className="text-sm font-medium">Horário *</label>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center">
+              <Clock className="mr-2 h-4 w-4" />
+              <Input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex items-center">
+              <Clock className="mr-2 h-4 w-4" />
+              <Input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                required
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -161,6 +223,24 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
           placeholder="Ex: Sala de Reuniões do Campus"
           required
         />
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="semester" className="text-sm font-medium">
+          Semestre Letivo *
+        </label>
+        <Select value={semesterId} onValueChange={setSemesterId}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o semestre" />
+          </SelectTrigger>
+          <SelectContent>
+            {semesters.map((semester) => (
+              <SelectItem key={semester.id} value={semester.id}>
+                {semester.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">
@@ -218,28 +298,36 @@ const NewMeetingForm: React.FC<NewMeetingFormProps> = ({ onComplete }) => {
 
       <div className="space-y-2">
         <label className="text-sm font-medium">
-          Anexos (opcional)
+          Anexos
         </label>
-        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md p-6 text-center">
-          <Upload className="mx-auto h-8 w-8 text-gray-400" />
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Arraste arquivos aqui ou clique para selecionar
-          </p>
+        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md p-6">
           <input
             type="file"
+            id="attachments"
             className="hidden"
-            id="file-upload"
             multiple
+            onChange={(e) => setAttachments(e.target.files)}
           />
-          <label htmlFor="file-upload">
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="mt-2"
-            >
-              Selecionar Arquivos
-            </Button>
+          <label htmlFor="attachments" className="cursor-pointer">
+            <div className="text-center">
+              <Upload className="mx-auto h-8 w-4 text-gray-400" />
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Arraste arquivos aqui ou clique para selecionar
+              </p>
+              <Button type="button" variant="outline" className="mt-2">
+                Selecionar Arquivos
+              </Button>
+            </div>
           </label>
+          {attachments && attachments.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {Array.from(attachments).map((file, index) => (
+                <div key={index} className="text-sm text-gray-500">
+                  {file.name}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

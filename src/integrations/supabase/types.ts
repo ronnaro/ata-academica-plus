@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      academic_semesters: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          name: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          name: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          name?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       certificates: {
         Row: {
           academic_period: string
@@ -91,6 +118,7 @@ export type Database = {
       meeting_minutes: {
         Row: {
           content: string
+          document_path: string | null
           file_path: string | null
           generated_at: string
           generated_by: string
@@ -100,6 +128,7 @@ export type Database = {
         }
         Insert: {
           content: string
+          document_path?: string | null
           file_path?: string | null
           generated_at?: string
           generated_by: string
@@ -109,6 +138,7 @@ export type Database = {
         }
         Update: {
           content?: string
+          document_path?: string | null
           file_path?: string | null
           generated_at?: string
           generated_by?: string
@@ -172,10 +202,13 @@ export type Database = {
           created_at: string
           created_by: string
           deliberations: string | null
+          end_time: string
           id: string
           location: string | null
           meeting_date: string
           meeting_type: Database["public"]["Enums"]["meeting_type"]
+          semester_id: string | null
+          start_time: string
           status: Database["public"]["Enums"]["meeting_status"]
           title: string
           updated_at: string
@@ -186,10 +219,13 @@ export type Database = {
           created_at?: string
           created_by: string
           deliberations?: string | null
+          end_time?: string
           id?: string
           location?: string | null
           meeting_date: string
           meeting_type: Database["public"]["Enums"]["meeting_type"]
+          semester_id?: string | null
+          start_time?: string
           status?: Database["public"]["Enums"]["meeting_status"]
           title: string
           updated_at?: string
@@ -200,15 +236,26 @@ export type Database = {
           created_at?: string
           created_by?: string
           deliberations?: string | null
+          end_time?: string
           id?: string
           location?: string | null
           meeting_date?: string
           meeting_type?: Database["public"]["Enums"]["meeting_type"]
+          semester_id?: string | null
+          start_time?: string
           status?: Database["public"]["Enums"]["meeting_status"]
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "meetings_semester_id_fkey"
+            columns: ["semester_id"]
+            isOneToOne: false
+            referencedRelation: "academic_semesters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       professors: {
         Row: {

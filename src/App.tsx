@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,15 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import RequireAuth from "@/components/RequireAuth";
-
-// Pages
-import AuthPage from "./pages/AuthPage";
-import Dashboard from "./pages/Dashboard";
-import ProfessorsPage from "./pages/ProfessorsPage";
-import MeetingDetailPage from "./pages/MeetingDetailPage";
-import CertificatesPage from "./pages/CertificatesPage";
-import SettingsPage from "./pages/SettingsPage";
-import NotFound from "./pages/NotFound";
+import SemesterPage from "./pages/SemesterPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +51,11 @@ const App = () => (
               <Route path="/settings" element={
                 <RequireAuth>
                   <SettingsPage />
+                </RequireAuth>
+              } />
+              <Route path="/semesters" element={
+                <RequireAuth requireCoordinator={true}>
+                  <SemesterPage />
                 </RequireAuth>
               } />
               <Route path="*" element={<NotFound />} />
